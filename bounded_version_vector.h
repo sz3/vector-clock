@@ -6,7 +6,6 @@
 #include <set>
 #include <utility>
 
-namespace turbo {
 template <typename KeyType, unsigned _limit=10>
 class bounded_version_vector
 {
@@ -198,4 +197,3 @@ protected:
 protected:
 	std::deque<clock> _clocks;
 };
-} // namespace turbo

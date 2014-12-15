@@ -3,12 +3,11 @@
 
 #include "bounded_version_vector.h"
 #include <iostream>
+#include <sstream>
 #include <string>
-#include "serialize/str_join.h"
 using std::string;
-using turbo::bounded_version_vector;
 
-namespace turbo {
+namespace {
 	std::ostream& operator<<(std::ostream& outstream, const bounded_version_vector<string>::clock& clock)
 	{
 		outstream << clock.key << ":" << clock.count;
@@ -20,6 +19,18 @@ namespace turbo {
 		outstream << clock.key << ":" << clock.count;
 		return outstream;
 	}
+
+	template <typename Clock>
+	string join(const std::deque<Clock>& clocks)
+	{
+		std::stringstream ss;
+		auto it = clocks.begin();
+		ss << *it;
+
+		for (++it; it != clocks.end(); ++it)
+			ss << " " << *it;
+		return ss.str();
+	}
 }
 
 TEST_CASE( "bounded_version_vectorTest/testIncrement", "[unit]" )
@@ -27,13 +38,13 @@ TEST_CASE( "bounded_version_vectorTest/testIncrement", "[unit]" )
 	bounded_version_vector<string> version;
 	version.increment("foo");
 	version.increment("bar");
-	assertEquals( "bar:1 foo:1", turbo::str::join(version.clocks()) );
+	assertEquals( "bar:1 foo:1", join(version.clocks()) );
 
 	version.increment("foo");
-	assertEquals( "foo:2 bar:1", turbo::str::join(version.clocks()) );
+	assertEquals( "foo:2 bar:1", join(version.clocks()) );
 
 	version.increment("oof");
-	assertEquals( "oof:1 foo:2 bar:1", turbo::str::join(version.clocks()) );
+	assertEquals( "oof:1 foo:2 bar:1", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testEmpty", "[unit]" )
@@ -63,19 +74,19 @@ TEST_CASE( "bounded_version_vectorTest/testLimits", "[unit]" )
 	version.increment("oof");
 	version.increment("rab");
 
-	assertEquals( "rab:1 oof:1 bar:1 foo:1", turbo::str::join(version.clocks()) );
+	assertEquals( "rab:1 oof:1 bar:1 foo:1", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testConstructors", "[unit]" )
 {
 	bounded_version_vector<string> version;
-	assertEquals( "", turbo::str::join(version.clocks()) );
+	assertEquals( "", join(version.clocks()) );
 
 	version.increment("foo");
 	version.increment("bar");
 
 	bounded_version_vector<string> other(version.clocks());
-	assertEquals( "bar:1 foo:1", turbo::str::join(other.clocks()) );
+	assertEquals( "bar:1 foo:1", join(other.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testCompare", "[unit]" )
@@ -189,21 +200,21 @@ TEST_CASE( "bounded_version_vectorTest/testMerge", "[unit]" )
 	one.increment("foo");
 
 	version.merge(one);
-	assertEquals( "foo:1", turbo::str::join(version.clocks()) );
+	assertEquals( "foo:1", join(version.clocks()) );
 
 	VectorClock two;
 	two.increment("foo");
 	two.increment("bar");
 
 	version.merge(two);
-	assertEquals( "bar:1 foo:1", turbo::str::join(version.clocks()) );
+	assertEquals( "bar:1 foo:1", join(version.clocks()) );
 
 	one.increment("foo");
 	version.merge(one);
 
 	// no definive order, but the algorithm says to alternate between conflicted clocks,
 	// beginning with self. So bar stays first.
-	assertEquals( "bar:1 foo:2", turbo::str::join(version.clocks()) );
+	assertEquals( "bar:1 foo:2", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testMerge.NewConflict", "[unit]" )
@@ -217,14 +228,14 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.NewConflict", "[unit]" )
 	two.increment("bar");
 
 	version.merge(two);
-	assertEquals( "foo:1 bar:1", turbo::str::join(version.clocks()) );
+	assertEquals( "foo:1 bar:1", join(version.clocks()) );
 
 	VectorClock three;
 	three.increment("foo");
 	three.increment("oof");
 
 	version.merge(three);
-	assertEquals( "oof:1 foo:1 bar:1", turbo::str::join(version.clocks()) );
+	assertEquals( "oof:1 foo:1 bar:1", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testMerge.OldConflict.CountGt", "[unit]" )
@@ -241,7 +252,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.OldConflict.CountGt", "[unit]" 
 	three.increment("foo");
 
 	version.merge(three);
-	assertEquals( "foo:2 oof:1 bar:1", turbo::str::join(version.clocks()) );
+	assertEquals( "foo:2 oof:1 bar:1", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testMerge.OldConflict.CountEq", "[unit]" )
@@ -259,7 +270,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.OldConflict.CountEq", "[unit]" 
 	three.increment("foo");
 
 	version.merge(three);
-	assertEquals( "foo:2 oof:1 bar:1", turbo::str::join(version.clocks()) );
+	assertEquals( "foo:2 oof:1 bar:1", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testMerge.Limit", "[unit]" )
@@ -279,7 +290,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.Limit", "[unit]" )
 	other.increment("6");
 
 	version.merge(other);
-	assertEquals( "6:1 5:1 4:1 3:1", turbo::str::join(version.clocks()) );
+	assertEquals( "6:1 5:1 4:1 3:1", join(version.clocks()) );
 
 	other.clear();
 	other.increment("6");
@@ -288,7 +299,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.Limit", "[unit]" )
 	other.increment("7");
 	other.increment("8");
 	version.merge(other);
-	assertEquals( "8:1 7:1 3:2 6:1", turbo::str::join(version.clocks()) );
+	assertEquals( "8:1 7:1 3:2 6:1", join(version.clocks()) );
 }
 
 TEST_CASE( "bounded_version_vectorTest/testMerge.CompleteConflict.VerifyCompareGreater", "[unit]" )
@@ -303,7 +314,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.CompleteConflict.VerifyCompareG
 	one.increment("3");
 	one.increment("4");
 	version.merge(one);
-	assertEquals( "4:1 3:1 2:1 1:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 3:1 2:1 1:1", join(version.clocks()) );
 
 	VectorClock two;
 	two.increment("5");
@@ -313,7 +324,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.CompleteConflict.VerifyCompareG
 
 	version.merge(two);
 	// no point of reference, interlace
-	assertEquals( "4:1 8:1 3:1 7:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 8:1 3:1 7:1", join(version.clocks()) );
 
 	assertEquals( VectorClock::GREATER_THAN, version.compare(one) );
 	assertEquals( VectorClock::GREATER_THAN, version.compare(two) );
@@ -331,7 +342,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.PartialConflict", "[unit]" )
 	one.increment("3");
 	one.increment("4");
 	version.merge(one);
-	assertEquals( "4:1 3:1 2:1 1:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 3:1 2:1 1:1", join(version.clocks()) );
 
 	VectorClock two;
 	two.increment("1");
@@ -341,7 +352,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.PartialConflict", "[unit]" )
 
 	version.merge(two);
 	// no point of reference, interlace
-	assertEquals( "4:1 8:1 3:1 7:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 8:1 3:1 7:1", join(version.clocks()) );
 
 	assertEquals( VectorClock::GREATER_THAN, version.compare(one) );
 	assertEquals( VectorClock::GREATER_THAN, version.compare(two) );
@@ -359,7 +370,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.CompleteConflict.VersionGreater
 	one.increment("3");
 	one.increment("4");
 	version.merge(one);
-	assertEquals( "4:1 3:1 2:1 1:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 3:1 2:1 1:1", join(version.clocks()) );
 
 	VectorClock two;
 	two.increment("6");
@@ -370,7 +381,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.CompleteConflict.VersionGreater
 
 	version.merge(two);
 	// no point of reference, interlace
-	assertEquals( "4:1 8:1 3:1 7:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 8:1 3:1 7:1", join(version.clocks()) );
 
 	assertEquals( VectorClock::GREATER_THAN, version.compare(one) );
 	assertEquals( VectorClock::GREATER_THAN, version.compare(two) );
@@ -388,7 +399,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.WeirdConflict", "[unit]" )
 	one.increment("3");
 	one.increment("4");
 	version.merge(one);
-	assertEquals( "4:1 3:1 2:1 1:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 3:1 2:1 1:1", join(version.clocks()) );
 
 	VectorClock two;
 	two.increment("2");
@@ -398,7 +409,7 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.WeirdConflict", "[unit]" )
 
 	version.merge(two);
 	// no point of reference, interlace
-	assertEquals( "4:1 8:1 3:1 7:1", turbo::str::join(version.clocks()) );
+	assertEquals( "4:1 8:1 3:1 7:1", join(version.clocks()) );
 
 	assertEquals( VectorClock::GREATER_THAN, version.compare(one) );
 	assertEquals( VectorClock::GREATER_THAN, version.compare(two) );
