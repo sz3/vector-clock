@@ -20,14 +20,14 @@ namespace {
 		return outstream;
 	}
 
-	template <typename Clock>
-	string join(const std::deque<Clock>& clocks)
+	template <typename Container>
+	string join(const Container& clocks)
 	{
 		std::stringstream ss;
 		auto it = clocks.begin();
-		ss << *it;
-
-		for (++it; it != clocks.end(); ++it)
+		if (it != clocks.end())
+			ss << *it++;
+		for (; it != clocks.end(); ++it)
 			ss << " " << *it;
 		return ss.str();
 	}
@@ -414,4 +414,3 @@ TEST_CASE( "bounded_version_vectorTest/testMerge.WeirdConflict", "[unit]" )
 	assertEquals( VectorClock::GREATER_THAN, version.compare(one) );
 	assertEquals( VectorClock::GREATER_THAN, version.compare(two) );
 }
-

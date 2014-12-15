@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 project(vector_clock_test)
+add_definitions(-std=c++11)
 
 set (SOURCES
 	test.cpp
@@ -8,7 +9,7 @@ set (SOURCES
 )
 
 include_directories(
-	${vector_clock_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 add_executable (
@@ -17,4 +18,3 @@ add_executable (
 )
 
 add_test(vector_clock_test vector_clock_test)
-
