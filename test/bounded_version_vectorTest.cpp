@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 using std::string;
+using vector_clock::bounded_version_vector;
 
 namespace {
 	std::ostream& operator<<(std::ostream& outstream, const bounded_version_vector<string>::clock& clock)

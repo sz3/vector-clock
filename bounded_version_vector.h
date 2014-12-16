@@ -6,6 +6,7 @@
 #include <set>
 #include <utility>
 
+namespace vector_clock {
 template <typename KeyType, unsigned _limit=10>
 class bounded_version_vector
 {
@@ -197,3 +198,4 @@ protected:
 protected:
 	std::deque<clock> _clocks;
 };
+} //namespace vector_clock
