@@ -6,3 +6,4 @@ set(SOURCES
 
 add_custom_target(vector_clock SOURCES ${SOURCES})
 
+add_subdirectory(test)
